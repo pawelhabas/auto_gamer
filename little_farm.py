@@ -12,6 +12,8 @@ def pokazuj(opis, ekran):
     cv2.waitKey()
     cv2.destroyAllWindows()
 
+
+# plik = 'marchew_do_zbioru.png'
 caly_img = ''
 
 
@@ -126,6 +128,66 @@ def wylogowanie():
             break
     print('Witamy z powrotem')
 
+
+def ile_obiektow_na_stronie(obiekt):
+    """
+    zliczanie ile jest obiektów na stronie
+    :param obiekt: nazwa zdjęcia
+    :return: ilość znalezionych obiektów
+    """
+    wycinek_img = cv2.imread(obiekt, cv2.IMREAD_UNCHANGED)
+    w = wycinek_img.shape[1]
+    h = wycinek_img.shape[0]
+
+    result = cv2.matchTemplate(caly_img, wycinek_img, cv2.TM_CCOEFF_NORMED)
+
+    threshold = .90
+    yloc, xloc = np.where(result >= threshold)
+
+    #   Wiele wyników
+    miejsca = []
+    for (x, y) in zip(xloc, yloc):
+        cv2.rectangle(caly_img, (x, y), (x + w, y + h), (0, 255, 255), 2)
+        miejsca.append([int(x), int(y), int(w), int(h)])
+        miejsca.append([int(x), int(y), int(w), int(h)])
+
+    miejsca, weights = cv2.groupRectangles(miejsca, 1, 0.2)
+    return len(miejsca)
+
+
+def obiekty_na_stronie(obiekt):
+    """
+    zliczanie ile jest obiektów na stronie
+    :param obiekt: nazwa zdjęcia
+    :return: ilość znalezionych obiektów
+    """
+    wycinek_img = cv2.imread(obiekt, cv2.IMREAD_UNCHANGED)
+    w = wycinek_img.shape[1]
+    h = wycinek_img.shape[0]
+
+    result = cv2.matchTemplate(caly_img, wycinek_img, cv2.TM_CCOEFF_NORMED)
+
+    threshold = .90
+    yloc, xloc = np.where(result >= threshold)
+
+    #   Wiele wyników
+    miejsca = []
+    for (x, y) in zip(xloc, yloc):
+        cv2.rectangle(caly_img, (x, y), (x + w, y + h), (0, 255, 255), 2)
+        miejsca.append([int(x), int(y), int(w), int(h)])
+        miejsca.append([int(x), int(y), int(w), int(h)])
+
+    miejsca, weights = cv2.groupRectangles(miejsca, 1, 0.2)
+    return miejsca
+
+
+def zmien_pole():
+    pass
+
+
+# pokazuj("Cały z prostokątem", caly_img)
+
+# pliki = ('grass.png', 'grass2.png', 'grass3.png')
 pliki_podlewanie = (
     'marchew_do_podlania.png', 'marchew_do_podlania2.png', 'zboze_do_podlania.png',
     'zboze_do_podlania2.png', 'ogorki_do_podlewania.png', 'truskawki_do_podlania.png', 'kukurydza_do_podlewania.png')
@@ -145,43 +207,56 @@ namiary_ogorki = []
 licz = 0
 liczba_petli = 0
 while True:
-    liczba_petli += 1
-    print(datetime.now().strftime("%H:%M:%S"), f"Pętla: {liczba_petli}")
-    if wylogowany():
-        print('Zostałeś wylogowany!')
-        wylogowanie()
-        # break
+    try:
+        liczba_petli += 1
+        print(f'{datetime.now().strftime("%Y-%m-%d,%H:%M:%S")},{liczba_petli}')
+        if wylogowany():
+            print('Zostałeś wylogowany!')
+            wylogowanie()
+            # break
+        ruch('woda_yes.png')
+        #   podlewanie
+        for warzywo in warzywa:
+            plik = warzywo + '_do_podlania.png'
+            ruch('podlej.png')
+            ruch(plik)
+            time.sleep(1)
+            #   Dodać przezunięcie względem punktu 0,0
+            # plik = warzywo + '_do_podlania.png'
+            # lista = obiekty_na_stronie(plik)
+            # if len(lista) > 0:
+            #     for namiar in lista:
+            #         ruch('podlej.png')
+            #         ruch2((namiar[0], namiar[1]))
+            # time.sleep(1)
+        #   zbiory
+        for warzywo in warzywa:
+            plik = warzywo + '_do_zbioru.png'
+            ruch('zbierz.png')
+            namiary[warzywo] = ruch(plik, zwrot=True)
 
-    # podlewanie
-    for warzywo in warzywa:
-        plik = warzywo + '_do_podlania.png'
-        ruch('podlej.png')
-        ruch(plik)
-        time.sleep(1)
-    # zbiory
-    for warzywo in warzywa:
-        plik = warzywo + '_do_zbioru.png'
-        ruch('zbierz.png')
-        namiary[warzywo] = ruch(plik, zwrot=True)
-        time.sleep(1)
+            time.sleep(1)
+        ruch('woda_yes.png')
+        #  sianie
+        for warzywo in warzywa:
+            if len(namiary[warzywo]):
+                print(f'Do zasiania {warzywo}:', len(namiary[warzywo]))
+                ruch('zasiej.png')
+                # ruch('marchewka.png')
+                ruch(warzywo + '.png')
+                # for namiar in namiary_marchewki:
+                for namiar in namiary[warzywo]:
+                    ruch2(namiar)
 
-    #  sianie
-    for warzywo in warzywa:
+                namiary[warzywo] = []
 
-        if len(namiary[warzywo]):
-            print(f'Do zasiania {warzywo}:', len(namiary[warzywo]))
-            ruch('zasiej.png')
-            # ruch('marchewka.png')
-            ruch(warzywo + '.png')
-            # for namiar in namiary_marchewki:
-            for namiar in namiary[warzywo]:
-                ruch2(namiar)
-
-            namiary[warzywo] = []
-
-    pobierz_screen()
-    print('Ilość pól:', len(pola_total))
-    time.sleep(3)
-    licz += 1
-
-
+        pobierz_screen()
+        print('Ilość pól:', len(pola_total))
+        time.sleep(3)
+        licz += 1
+    except Exception as e:
+        if input('Czy kontynuować (t/n)? ').strip() == 't':
+            continue
+        else:
+            break
+   
